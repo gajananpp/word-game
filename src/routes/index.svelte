@@ -5,5 +5,3 @@
 		const game = await import('$lib/game');
 	});
 </script>
-
-

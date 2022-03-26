@@ -1,125 +1,220 @@
-import { Scene } from "phaser";
+import { Scene } from 'phaser';
+import { isNewHighScore } from '../utils/highScore';
 
 export class Game extends Scene {
+	score: Phaser.GameObjects.Text | null;
+	missed: Phaser.GameObjects.Text | null;
 
-    TEXT_CATEGORY = 0b0001
-    EXPLOSION_CATEGORY = 0b0010
+	poofSound: Phaser.Sound.BaseSound | null;
+	missedSound: Phaser.Sound.BaseSound | null;
 
-    score: Phaser.GameObjects.Text | null
-    spawnCount = 1
-    textVelocity = 0.01
-    gravityY = 0
+	spawnCount = 1;
+	textVelocity = 0.01;
+	velocityY = 50;
 
-    constructor() {
-        super('game')
-    }
+	isNewHI = false;
 
-    preload() {
-        this.load.image('page', 'page.webp')
-        this.load.spritesheet('poof', 'poof.png', {
-            frameWidth: 256,
-            frameHeight: 256
-        })
-    }
+	constructor() {
+		super('game');
+	}
 
-    create() {
-        this.gravityY = (<Phaser.Types.Math.Vector2Like>this.matter.config.gravity).y
-        this.matter.world.setBounds()
+	preload() {
+		this.load.image('page', 'page.webp');
+		this.load.spritesheet('poof', 'poof.png', {
+			frameWidth: 256,
+			frameHeight: 256
+		});
+		this.load.audio('poof', 'poof.wav');
+		this.load.audio('missed', 'missed.wav');
+	}
 
-        this.add.image(0, -100, 'page').setOrigin(0, 0).setScale(1, 0.85)
-        this.anims.create({
-            key: 'poof',
-            frames: this.anims.generateFrameNumbers('poof', {
-                start: 0,
-                end: 29
-            }),
-            frameRate: 15,
-            hideOnComplete: true
-        });
+	create() {
+		this.reset();
+		this.physics.world.gravity.y = 0;
 
-        this.setScore(0)
-        this.spawnText()
+		this.add.image(0, -100, 'page').setOrigin(0, 0).setScale(1, 0.85);
+		this.poofSound = this.sound.add('poof');
+		this.missedSound = this.sound.add('missed');
+		this.anims.create({
+			key: 'poof',
+			frames: this.anims.generateFrameNumbers('poof', {
+				start: 0,
+				end: 29
+			}),
+			hideOnComplete: true
+		});
 
-        this.time.addEvent({
-            loop: true,
-            callback: this.increaseDifficulty,
-            callbackScope: this,
-            delay: 10 * 1000
-        })
-        this.time.addEvent({
-            loop: true,
-            callback: this.spawnText,
-            callbackScope: this,
-            delay: 1 * 1000
-        })
+		this.physics.world.on(
+			Phaser.Physics.Arcade.Events.WORLD_BOUNDS,
+			(bo: Phaser.Physics.Arcade.Body, top: boolean, down: boolean) => {
+				if (down) this.onTextMissed(bo.gameObject);
+			}
+		);
 
-        setTimeout(() => {
-            const text = this.children.getByName('text-fantastic')
+		this.setScore(0);
+		this.setMissed(0);
+		this.spawnText();
+		this.initTimers();
+	}
 
-            const poofer = this.matter.add.sprite(0, 0, 'poof')
-            poofer.setScale(2)
-            poofer.setCollisionCategory(this.EXPLOSION_CATEGORY)
-            poofer.setCollidesWith([])
+	initTimers() {
+		this.time.addEvent({
+			loop: true,
+			callback: this.increaseDifficulty,
+			callbackScope: this,
+			delay: 10 * 1000
+		});
+		this.time.addEvent({
+			loop: true,
+			callback: this.spawnText,
+			callbackScope: this,
+			delay: 1 * 1000
+		});
+	}
 
-            Phaser.Display.Align.In.Center(poofer, text)
+	increaseDifficulty() {
+		if (this.spawnCount < 6) {
+			this.spawnCount++;
+			this.velocityY = this.velocityY + 25;
+		} else {
+			this.velocityY = this.velocityY + 50;
+		}
+	}
 
-            poofer.anims.play('poof', true)
-            poofer.on(Phaser.Animations.Events.ANIMATION_UPDATE, (anim, frame: Phaser.Animations.AnimationFrame) => {
-                if (frame.index === 6) {
-                    text.destroy() 
-                    this.setScore(this.score.getData('score') + 1)
-                }
-            })
-            poofer.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
-                poofer.destroy()
-            })
-        }, 5000)
-    }
+	spawnText() {
+		const spawn = () => {
+			const text = this.add
+				.text(Phaser.Math.Between(100, this.game.canvas.width - 100), 0, 'fantastic', {
+					fontFamily: `"Indie Flower", cursive`,
+					fontSize: '1.8rem',
+					color: '#6b6b6b',
+					padding: {
+						top: -6,
+						bottom: -10
+					}
+				})
+				.setOrigin(0, 0)
+				.setName('text-fantastic');
 
-    update() {
+			const textWithPhysics = <Phaser.Types.Physics.Arcade.GameObjectWithDynamicBody>(
+				this.physics.add.existing(text)
+			);
+			textWithPhysics.body.setCollideWorldBounds(true);
+			textWithPhysics.body.onWorldBounds = true;
+			textWithPhysics.body.setVelocityY(this.velocityY);
+		};
 
-    }
+		this.time.addEvent({
+			delay: 0.05 * 1000,
+			repeatCount: this.spawnCount,
+			callback: spawn
+		});
+	}
 
-    increaseDifficulty() {
-        if (this.spawnCount < 6) {
-            this.spawnCount++
-        } else {
-            this.gravityY = this.gravityY + 0.25
-            this.matter.world.setGravity(0, this.gravityY)
-        }
-    }
+	setScore(newScore: number) {
+		if (this.score) {
+			this.score.setText(`Score: ${newScore}`);
+		} else {
+			this.score = this.add
+				.text(20, 20, `Score: ${newScore}`, {
+					fontSize: '1.5rem',
+					color: '#f00'
+				})
+				.setOrigin(0, 0);
+		}
+		if (!this.isNewHI && isNewHighScore(newScore)) {
+			this.isNewHI = true;
+			this.showTrophy();
+		}
+		this.score.setData('score', newScore);
+	}
 
-    spawnText() {
-        for (let i = 0; i < this.spawnCount; i++) {
-            const text = this.add.text(Phaser.Math.Between(100, this.game.canvas.width), 0, "fantastic", {
-                fontFamily: `"Indie Flower", cursive`,
-                fontSize: '32px',
-                color: '#6b6b6b',
-                padding: {
-                    top: -6,
-                    bottom: -10
-                }
-            }).setOrigin(0, 0).setName('text-fantastic')
+	setMissed(missed: number) {
+		if (this.missed) {
+			this.missed.setText(`Missed: ${missed}/10`);
+		} else {
+			this.missed = this.add
+				.text(20, this.score.y + 30, `Missed: ${missed}/10`, {
+					fontSize: '1.5rem',
+					color: '#f00'
+				})
+				.setOrigin(0, 0);
+		}
+		this.missed.setData('missed', missed);
+	}
 
-            const textMatter = <Phaser.Physics.Matter.Image>this.matter.add.gameObject(text)
-            textMatter.setBounce(0)
-            textMatter.setCollisionCategory(this.TEXT_CATEGORY)
-            textMatter.setCollidesWith([this.TEXT_CATEGORY])
-                textMatter.setOnCollideWith([(<any>this.matter.world.walls).top], (...a) => {
-                    console.log(a[1].collision.normal)
-                })  
-        }
-    }
+	showTrophy() {
+		const trophyText = this.add
+			.text(20, this.missed.y + 30, `🏆`, {
+				fontSize: '2rem',
+				color: '#f00'
+			})
+			.setOrigin(0, 0);
+		this.tweens.add({
+			targets: trophyText,
+			scale: 1.2,
+			yoyo: true,
+			repeat: 3,
+			duration: 50
+		});
+	}
 
-    setScore(newScore: number) {
-        if (this.score) {
-            this.score.setText(`Score: ${newScore}`)
-        } else {
-            this.score = this.add.text(20, 20, `Score: ${newScore}`, {
-                fontSize: '1.5rem',
-                color: '#f00'
-            }).setOrigin(0, 0)
-        }
-        this.score.setData('score', newScore)
-    }
+	onHit(text: string) {
+		const textGO = this.children.getByName(`text-${text}`);
+		if (textGO) {
+			const poofer = this.physics.add.sprite(0, 0, 'poof');
+			poofer.setScale(1.5);
+
+			Phaser.Display.Align.In.Center(poofer, textGO);
+
+			poofer.anims.play('poof', true);
+			this.poofSound.play();
+			poofer.on(
+				Phaser.Animations.Events.ANIMATION_UPDATE,
+				(anim, frame: Phaser.Animations.AnimationFrame) => {
+					if (frame.index === 6) {
+						textGO.destroy();
+						this.setScore(this.score.getData('score') + 1);
+					}
+				}
+			);
+			poofer.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+				poofer.destroy();
+			});
+		}
+	}
+
+	onTextMissed(textGO: Phaser.GameObjects.GameObject) {
+		this.missedSound.play();
+		textGO.destroy();
+		const missed = this.missed.getData('missed') + 1;
+		if (missed <= 10) {
+			this.setMissed(missed);
+			if (missed == 10) this.transitionToStartScene();
+		}
+	}
+
+	transitionToStartScene() {
+		this.scene.transition({
+			target: 'startgame',
+			data: {
+				score: this.score.getData('score'),
+				isNewHighScore: this.isNewHI
+			}
+		});
+	}
+
+	reset() {
+		this.score = null;
+		this.missed = null;
+
+		this.poofSound = null;
+		this.missedSound = null;
+
+		this.spawnCount = 1;
+		this.textVelocity = 0.01;
+		this.velocityY = 50;
+
+		this.isNewHI = false;
+	}
 }
