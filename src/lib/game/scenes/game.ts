@@ -95,7 +95,6 @@ export class Game extends Scene {
 					fontSize: '1.8rem',
 					color: '#6b6b6b',
 					padding: {
-						top: -6,
 						bottom: -10
 					}
 				})

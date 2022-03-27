@@ -112,7 +112,7 @@ export class StartGame extends Scene {
 			color: '#f00'
 		});
 
-		Phaser.Display.Align.In.BottomCenter(missedWordsText, startButton, 0, 80);
+		Phaser.Display.Align.In.BottomCenter(missedWordsText, startButton, 0, 85);
 
 		Phaser.Actions.GridAlign(textGOs, {
 			width: 5,
