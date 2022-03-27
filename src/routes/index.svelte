@@ -2,6 +2,6 @@
 	import { onMount } from 'svelte';
 
 	onMount(async () => {
-		const game = await import('$lib/game');
+		await import('$lib/game');
 	});
 </script>

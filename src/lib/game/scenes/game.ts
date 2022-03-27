@@ -1,4 +1,5 @@
 import { Scene } from 'phaser';
+import { startTransription } from '../deepgram';
 import { isNewHighScore } from '../utils/highScore';
 
 export class Game extends Scene {
@@ -8,11 +9,15 @@ export class Game extends Scene {
 	poofSound: Phaser.Sound.BaseSound | null;
 	missedSound: Phaser.Sound.BaseSound | null;
 
+	dgSocket: WebSocket | null;
+
 	spawnCount = 1;
 	textVelocity = 0.01;
 	velocityY = 50;
 
 	isNewHI = false;
+
+	missedTexts: string[] = [];
 
 	constructor() {
 		super('game');
@@ -28,7 +33,7 @@ export class Game extends Scene {
 		this.load.audio('missed', 'missed.wav');
 	}
 
-	create() {
+	async create() {
 		this.reset();
 		this.physics.world.gravity.y = 0;
 
@@ -53,7 +58,8 @@ export class Game extends Scene {
 
 		this.setScore(0);
 		this.setMissed(0);
-		this.spawnText();
+		this.dgSocket = await startTransription(this.onHit.bind(this));
+		// this.spawnText();
 		this.initTimers();
 	}
 
@@ -190,16 +196,19 @@ export class Game extends Scene {
 		const missed = this.missed.getData('missed') + 1;
 		if (missed <= 10) {
 			this.setMissed(missed);
+			this.missedTexts.push(textGO.name.replace('text-', ''));
 			if (missed == 10) this.transitionToStartScene();
 		}
 	}
 
 	transitionToStartScene() {
+		if (this.dgSocket) this.dgSocket.close();
 		this.scene.transition({
-			target: 'startgame',
+			target: 'startGame',
 			data: {
 				score: this.score.getData('score'),
-				isNewHighScore: this.isNewHI
+				isNewHighScore: this.isNewHI,
+				missedTexts: this.missedTexts
 			}
 		});
 	}
@@ -207,6 +216,8 @@ export class Game extends Scene {
 	reset() {
 		this.score = null;
 		this.missed = null;
+
+		this.dgSocket = null;
 
 		this.poofSound = null;
 		this.missedSound = null;
@@ -216,5 +227,7 @@ export class Game extends Scene {
 		this.velocityY = 50;
 
 		this.isNewHI = false;
+
+		this.missedTexts = [];
 	}
 }
