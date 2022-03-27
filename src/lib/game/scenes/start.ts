@@ -3,7 +3,7 @@ import { getHighScore, setHighScore } from '../utils/highScore';
 
 export class StartGame extends Scene {
 	constructor() {
-		super('startgame');
+		super('startGame');
 	}
 
 	preload() {
@@ -14,12 +14,12 @@ export class StartGame extends Scene {
 		});
 	}
 
-	create(params: { score?: number; isNewHighScore?: boolean }) {
-		const { score, isNewHighScore } = params;
+	create(params: { score?: number; isNewHighScore?: boolean; missedTexts?: string[] }) {
+		const { score, isNewHighScore, missedTexts } = params;
 
 		this.add.image(0, -100, 'page').setOrigin(0, 0).setScale(1, 0.85);
 		this.anims.create({
-			key: 'buttonclick',
+			key: 'buttonClick',
 			frames: this.anims.generateFrameNumbers('button', {
 				start: 0,
 				end: 1
@@ -32,6 +32,8 @@ export class StartGame extends Scene {
 		const hi = isNewHighScore ? setHighScore(score) : getHighScore();
 		if (hi > 0) this.showHighScore(hi);
 		if (score >= 0) this.showScore(score, isNewHighScore);
+
+		if (missedTexts?.length > 0) this.showMissedTexts(missedTexts);
 	}
 
 	createStartButton() {
@@ -48,7 +50,7 @@ export class StartGame extends Scene {
 		Phaser.Display.Align.In.Center(startText, startButton);
 
 		startButton.on('pointerdown', () => {
-			startButton.play('buttonclick');
+			startButton.play('buttonClick');
 			startButton.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
 				this.scene.transition({
 					target: 'game'
@@ -88,5 +90,38 @@ export class StartGame extends Scene {
 			.setName('hiText');
 		Phaser.Display.Align.In.TopCenter(hiText, this.children.getByName('startButton'), 0, 50);
 		return hiText;
+	}
+
+	showMissedTexts(missedTexts: string[]) {
+		const textGOs = missedTexts.map((missedText) => {
+			return this.add.text(0, 0, missedText, {
+				fontFamily: `"Indie Flower", cursive`,
+				fontSize: '1.8rem',
+				color: '#6b6b6b',
+				padding: {
+					top: -6,
+					bottom: -10
+				}
+			});
+		});
+
+		const startButton = <Phaser.GameObjects.Image>this.children.getByName('startButton');
+
+		const missedWordsText = this.add.text(0, 0, 'Missed Words: ', {
+			fontSize: '1.8rem',
+			color: '#f00'
+		});
+
+		Phaser.Display.Align.In.BottomCenter(missedWordsText, startButton, 0, 80);
+
+		Phaser.Actions.GridAlign(textGOs, {
+			width: 5,
+			height: 2,
+			cellWidth: textGOs[0].width + 20,
+			cellHeight: textGOs[0].height + 20,
+			position: Phaser.Display.Align.CENTER,
+			x: startButton.x - startButton.width,
+			y: startButton.y - startButton.height + 210
+		});
 	}
 }
