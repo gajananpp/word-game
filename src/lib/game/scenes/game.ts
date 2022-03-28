@@ -11,13 +11,10 @@ export class Game extends Scene {
 
 	dgSocket: WebSocket | null;
 
-	spawnCount = 1;
-	textVelocity = 0.01;
 	velocityY = 50;
-
 	isNewHI = false;
-
 	missedTexts: string[] = [];
+	words: string[] = [];
 
 	constructor() {
 		super('game');
@@ -31,6 +28,8 @@ export class Game extends Scene {
 		});
 		this.load.audio('poof', 'poof.wav');
 		this.load.audio('missed', 'missed.wav');
+
+		this.load.text('words', 'words.txt');
 	}
 
 	async create() {
@@ -48,6 +47,7 @@ export class Game extends Scene {
 			}),
 			hideOnComplete: true
 		});
+		this.words = (<string>this.cache.text.get('words')).split(',');
 
 		this.physics.world.on(
 			Phaser.Physics.Arcade.Events.WORLD_BOUNDS,
@@ -59,8 +59,8 @@ export class Game extends Scene {
 		this.setScore(0);
 		this.setMissed(0);
 		this.dgSocket = await startTransription(this.onHit.bind(this));
-		// this.spawnText();
 		this.initTimers();
+		this.spawnText()
 	}
 
 	initTimers() {
@@ -68,52 +68,38 @@ export class Game extends Scene {
 			loop: true,
 			callback: this.increaseDifficulty,
 			callbackScope: this,
-			delay: 10 * 1000
+			delay: 5 * 1000
 		});
 		this.time.addEvent({
 			loop: true,
 			callback: this.spawnText,
 			callbackScope: this,
-			delay: 1 * 1000
+			delay: 2 * 1000
 		});
 	}
 
 	increaseDifficulty() {
-		if (this.spawnCount < 6) {
-			this.spawnCount++;
-			this.velocityY = this.velocityY + 25;
-		} else {
-			this.velocityY = this.velocityY + 50;
-		}
+		this.velocityY = this.velocityY + 5;
 	}
 
 	spawnText() {
-		const spawn = () => {
-			const text = this.add
-				.text(Phaser.Math.Between(100, this.game.canvas.width - 100), 0, 'fantastic', {
-					fontFamily: `"Indie Flower", cursive`,
-					fontSize: '1.8rem',
-					color: '#6b6b6b',
-					padding: {
-						bottom: -10
-					}
-				})
-				.setOrigin(0, 0)
-				.setName('text-fantastic');
+		const randomWord = this.words[Phaser.Math.Between(0, this.words.length - 1)];
 
-			const textWithPhysics = <Phaser.Types.Physics.Arcade.GameObjectWithDynamicBody>(
-				this.physics.add.existing(text)
-			);
-			textWithPhysics.body.setCollideWorldBounds(true);
-			textWithPhysics.body.onWorldBounds = true;
-			textWithPhysics.body.setVelocityY(this.velocityY);
-		};
+		const text = this.add
+			.text(Phaser.Math.Between(100, this.game.canvas.width - 100), 0, randomWord, {
+				fontFamily: `"Indie Flower", cursive`,
+				fontSize: '1.8rem',
+				color: '#6b6b6b'
+			})
+			.setOrigin(0, 0)
+			.setName(`text-${randomWord}`);
 
-		this.time.addEvent({
-			delay: 0.05 * 1000,
-			repeatCount: this.spawnCount,
-			callback: spawn
-		});
+		const textWithPhysics = <Phaser.Types.Physics.Arcade.GameObjectWithDynamicBody>(
+			this.physics.add.existing(text)
+		);
+		textWithPhysics.body.setCollideWorldBounds(true);
+		textWithPhysics.body.onWorldBounds = true;
+		textWithPhysics.body.setVelocityY(this.velocityY);
 	}
 
 	setScore(newScore: number) {
@@ -165,6 +151,7 @@ export class Game extends Scene {
 	}
 
 	onHit(text: string) {
+		console.log(text)
 		const textGO = this.children.getByName(`text-${text}`);
 		if (textGO) {
 			const poofer = this.physics.add.sprite(0, 0, 'poof');
@@ -216,17 +203,13 @@ export class Game extends Scene {
 		this.score = null;
 		this.missed = null;
 
-		this.dgSocket = null;
-
 		this.poofSound = null;
 		this.missedSound = null;
 
-		this.spawnCount = 1;
-		this.textVelocity = 0.01;
-		this.velocityY = 50;
-
+		this.dgSocket = null;
+		this.velocityY = 25;
 		this.isNewHI = false;
-
 		this.missedTexts = [];
+		this.words = [];
 	}
 }

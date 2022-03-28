@@ -15,7 +15,7 @@ export const startTransription = async (cb: (transcript: string) => void) => {
 		audioRecorder.addEventListener('dataavailable', async (evt) => {
 			if (evt.data.size > 0 && sock.readyState === 1) sock.send(evt.data);
 		});
-		audioRecorder.start(1000);
+		audioRecorder.start(0.01 * 1000);
 	};
 
 	sock.onmessage = ({ data }) => {

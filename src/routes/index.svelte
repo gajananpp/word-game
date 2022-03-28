@@ -5,3 +5,7 @@
 		await import('$lib/game');
 	});
 </script>
+
+<svelte:head>
+	<title>Dictation Game</title>
+</svelte:head>

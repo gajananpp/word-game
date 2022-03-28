@@ -97,31 +97,27 @@ export class StartGame extends Scene {
 			return this.add.text(0, 0, missedText, {
 				fontFamily: `"Indie Flower", cursive`,
 				fontSize: '1.8rem',
-				color: '#6b6b6b',
-				padding: {
-					top: -6,
-					bottom: -10
-				}
+				color: '#6b6b6b'
 			});
 		});
 
 		const startButton = <Phaser.GameObjects.Image>this.children.getByName('startButton');
 
-		const missedWordsText = this.add.text(0, 0, 'Missed Words: ', {
-			fontSize: '1.8rem',
-			color: '#f00'
-		});
+		// const missedWordsText = this.add.text(0, 0, 'Missed Words: ', {
+		// 	fontSize: '1.8rem',
+		// 	color: '#f00'
+		// });
 
-		Phaser.Display.Align.In.BottomCenter(missedWordsText, startButton, 0, 85);
+		// Phaser.Display.Align.In.BottomCenter(missedWordsText, startButton, 0, 85);
 
 		Phaser.Actions.GridAlign(textGOs, {
-			width: 5,
-			height: 2,
-			cellWidth: textGOs[0].width + 20,
-			cellHeight: textGOs[0].height + 20,
+			width: 2,
+			height: 5,
+			cellWidth: 180,
+			cellHeight: textGOs[0].height + 10,
 			position: Phaser.Display.Align.CENTER,
-			x: startButton.x - startButton.width,
-			y: startButton.y - startButton.height + 210
+			x: 160,
+			y: startButton.y - 260
 		});
 	}
 }
