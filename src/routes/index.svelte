@@ -7,5 +7,5 @@
 </script>
 
 <svelte:head>
-	<title>Dictation Game</title>
+	<title>Word Game</title>
 </svelte:head>

@@ -4,17 +4,20 @@ import { isNewHighScore } from '../utils/highScore';
 
 export class Game extends Scene {
 	score: Phaser.GameObjects.Text | null;
-	missed: Phaser.GameObjects.Text | null;
+	countDown: Phaser.GameObjects.Text | null;
 
 	poofSound: Phaser.Sound.BaseSound | null;
-	missedSound: Phaser.Sound.BaseSound | null;
 
 	dgSocket: WebSocket | null;
 
-	velocityY = 50;
+	velocityY = 80;
 	isNewHI = false;
-	missedTexts: string[] = [];
 	words: string[] = [];
+	spawnCount = 1;
+	remainingSeconds = 2 * 60 * 1000;
+
+	spawnTimer: Phaser.Time.TimerEvent | null;
+	gameTimer: Phaser.Time.TimerEvent | null;
 
 	constructor() {
 		super('game');
@@ -27,7 +30,6 @@ export class Game extends Scene {
 			frameHeight: 256
 		});
 		this.load.audio('poof', 'poof.wav');
-		this.load.audio('missed', 'missed.wav');
 
 		this.load.text('words', 'words.txt');
 	}
@@ -38,7 +40,6 @@ export class Game extends Scene {
 
 		this.add.image(0, -100, 'page').setOrigin(0, 0).setScale(1, 0.85);
 		this.poofSound = this.sound.add('poof');
-		this.missedSound = this.sound.add('missed');
 		this.anims.create({
 			key: 'poof',
 			frames: this.anims.generateFrameNumbers('poof', {
@@ -49,18 +50,11 @@ export class Game extends Scene {
 		});
 		this.words = (<string>this.cache.text.get('words')).split(',');
 
-		this.physics.world.on(
-			Phaser.Physics.Arcade.Events.WORLD_BOUNDS,
-			(bo: Phaser.Physics.Arcade.Body, top: boolean, down: boolean) => {
-				if (down) this.onTextMissed(bo.gameObject);
-			}
-		);
-
 		this.setScore(0);
-		this.setMissed(0);
+		this.setCountDown(this.remainingSeconds);
 		this.dgSocket = await startTransription(this.onHit.bind(this));
 		this.initTimers();
-		this.spawnText()
+		this.spawnText();
 	}
 
 	initTimers() {
@@ -70,36 +64,61 @@ export class Game extends Scene {
 			callbackScope: this,
 			delay: 5 * 1000
 		});
-		this.time.addEvent({
+		this.spawnTimer = this.time.addEvent({
 			loop: true,
 			callback: this.spawnText,
 			callbackScope: this,
-			delay: 2 * 1000
+			delay: 1.5 * 1000
+		});
+		this.gameTimer = this.time.addEvent({
+			callback: this.onSecondElapsed,
+			callbackScope: this,
+			delay: 1 * 1000,
+			loop: true
 		});
 	}
 
-	increaseDifficulty() {
-		this.velocityY = this.velocityY + 5;
+	onSecondElapsed() {
+		this.remainingSeconds = this.remainingSeconds - 1 * 1000;
+		if (this.remainingSeconds === 0) {
+			this.transitionToStartScene();
+		} else {
+			this.setCountDown(this.remainingSeconds);
+		}
 	}
 
-	spawnText() {
-		const randomWord = this.words[Phaser.Math.Between(0, this.words.length - 1)];
+	increaseDifficulty() {
+		if (this.spawnCount < 5) {
+			this.spawnCount = this.spawnCount + 1;
+		} else {
+			this.velocityY = this.velocityY + 25;
+			this.spawnTimer.timeScale = this.spawnTimer.timeScale + 1;
+		}
+	}
 
-		const text = this.add
-			.text(Phaser.Math.Between(100, this.game.canvas.width - 100), 0, randomWord, {
-				fontFamily: `"Indie Flower", cursive`,
-				fontSize: '1.8rem',
-				color: '#6b6b6b'
-			})
-			.setOrigin(0, 0)
-			.setName(`text-${randomWord}`);
+	async spawnText() {
+		const spawn = () => {
+			const randomWord = this.words[Phaser.Math.Between(0, this.words.length - 1)];
 
-		const textWithPhysics = <Phaser.Types.Physics.Arcade.GameObjectWithDynamicBody>(
-			this.physics.add.existing(text)
-		);
-		textWithPhysics.body.setCollideWorldBounds(true);
-		textWithPhysics.body.onWorldBounds = true;
-		textWithPhysics.body.setVelocityY(this.velocityY);
+			const text = this.add
+				.text(Phaser.Math.Between(100, this.game.canvas.width - 100), 0, randomWord, {
+					fontFamily: `"Indie Flower", cursive`,
+					fontSize: '1.8rem',
+					color: '#6b6b6b'
+				})
+				.setOrigin(0, 0)
+				.setName(`text-${randomWord}`);
+
+			const textWithPhysics = <Phaser.Types.Physics.Arcade.GameObjectWithDynamicBody>(
+				this.physics.add.existing(text)
+			);
+			textWithPhysics.body.setVelocityY(this.velocityY);
+		};
+		this.time.addEvent({
+			repeatCount: this.spawnCount,
+			callback: spawn,
+			delay: 0.1 * 1000
+		});
 	}
 
 	setScore(newScore: number) {
@@ -120,23 +139,25 @@ export class Game extends Scene {
 		this.score.setData('score', newScore);
 	}
 
-	setMissed(missed: number) {
-		if (this.missed) {
-			this.missed.setText(`Missed: ${missed}/10`);
+	setCountDown(missed: number) {
+		const formattedTime = `⏱: ${this.formatCountDownTimer(missed)}`;
+		console.log(formattedTime);
+		if (this.countDown) {
+			this.countDown.setText(formattedTime);
 		} else {
-			this.missed = this.add
-				.text(20, this.score.y + 30, `Missed: ${missed}/10`, {
+			this.countDown = this.add
+				.text(20, this.score.y + 30, formattedTime, {
 					fontSize: '1.5rem',
 					color: '#f00'
 				})
 				.setOrigin(0, 0);
 		}
-		this.missed.setData('missed', missed);
+		this.countDown.setData('missed', missed);
 	}
 
 	showTrophy() {
 		const trophyText = this.add
-			.text(20, this.missed.y + 30, `🏆`, {
+			.text(20, this.countDown.y + 30, `🏆`, {
 				fontSize: '2rem',
 				color: '#f00'
 			})
@@ -151,7 +172,6 @@ export class Game extends Scene {
 	}
 
 	onHit(text: string) {
-		console.log(text)
 		const textGO = this.children.getByName(`text-${text}`);
 		if (textGO) {
 			const poofer = this.physics.add.sprite(0, 0, 'poof');
@@ -176,40 +196,39 @@ export class Game extends Scene {
 		}
 	}
 
-	onTextMissed(textGO: Phaser.GameObjects.GameObject) {
-		this.missedSound.play();
-		textGO.destroy();
-		const missed = this.missed.getData('missed') + 1;
-		if (missed <= 10) {
-			this.setMissed(missed);
-			this.missedTexts.push(textGO.name.replace('text-', ''));
-			if (missed == 10) this.transitionToStartScene();
-		}
-	}
-
 	transitionToStartScene() {
 		if (this.dgSocket) this.dgSocket.close();
 		this.scene.transition({
 			target: 'startGame',
 			data: {
 				score: this.score.getData('score'),
-				isNewHighScore: this.isNewHI,
-				missedTexts: this.missedTexts
+				isNewHighScore: this.isNewHI
 			}
 		});
 	}
 
+	formatCountDownTimer(ms: number) {
+		const minutesRemaining = Math.floor(ms / (60 * 1000));
+		const secondsRemaing = Math.floor((ms % (60 * 1000)) / 1000);
+		const strMin = `0${minutesRemaining}`;
+		const strSec =
+			secondsRemaing.toString().length > 1 ? `${secondsRemaing}` : `0${secondsRemaing}`;
+		return `${strMin}:${strSec}`;
+	}
+
 	reset() {
 		this.score = null;
-		this.missed = null;
+		this.countDown = null;
 
 		this.poofSound = null;
-		this.missedSound = null;
+
+		this.spawnTimer = null;
+		this.gameTimer = null;
 
 		this.dgSocket = null;
-		this.velocityY = 25;
+		this.velocityY = 80;
 		this.isNewHI = false;
-		this.missedTexts = [];
 		this.words = [];
+		this.spawnCount = 1;
 	}
 }

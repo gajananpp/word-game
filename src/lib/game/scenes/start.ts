@@ -14,8 +14,8 @@ export class StartGame extends Scene {
 		});
 	}
 
-	create(params: { score?: number; isNewHighScore?: boolean; missedTexts?: string[] }) {
-		const { score, isNewHighScore, missedTexts } = params;
+	create(params: { score?: number; isNewHighScore?: boolean }) {
+		const { score, isNewHighScore } = params;
 
 		this.add.image(0, -100, 'page').setOrigin(0, 0).setScale(1, 0.85);
 		this.anims.create({
@@ -32,8 +32,6 @@ export class StartGame extends Scene {
 		const hi = isNewHighScore ? setHighScore(score) : getHighScore();
 		if (hi > 0) this.showHighScore(hi);
 		if (score >= 0) this.showScore(score, isNewHighScore);
-
-		if (missedTexts?.length > 0) this.showMissedTexts(missedTexts);
 	}
 
 	createStartButton() {
@@ -90,34 +88,5 @@ export class StartGame extends Scene {
 			.setName('hiText');
 		Phaser.Display.Align.In.TopCenter(hiText, this.children.getByName('startButton'), 0, 50);
 		return hiText;
-	}
-
-	showMissedTexts(missedTexts: string[]) {
-		const textGOs = missedTexts.map((missedText) => {
-			return this.add.text(0, 0, missedText, {
-				fontFamily: `"Indie Flower", cursive`,
-				fontSize: '1.8rem',
-				color: '#6b6b6b'
-			});
-		});
-
-		const startButton = <Phaser.GameObjects.Image>this.children.getByName('startButton');
-
-		// const missedWordsText = this.add.text(0, 0, 'Missed Words: ', {
-		// 	fontSize: '1.8rem',
-		// 	color: '#f00'
-		// });
-
-		// Phaser.Display.Align.In.BottomCenter(missedWordsText, startButton, 0, 85);
-
-		Phaser.Actions.GridAlign(textGOs, {
-			width: 2,
-			height: 5,
-			cellWidth: 180,
-			cellHeight: textGOs[0].height + 10,
-			position: Phaser.Display.Align.CENTER,
-			x: 160,
-			y: startButton.y - 260
-		});
 	}
 }
