@@ -1,11 +1,11 @@
 {
   ".svelte-kit/runtime/client/start.js": {
-    "file": "start-9490a0d0.js",
+    "file": "start-706797ed.js",
     "src": ".svelte-kit/runtime/client/start.js",
     "isEntry": true,
     "imports": [
       "_vendor-2bdf7795.js",
-      "_preload-helper-e4860ae8.js"
+      "_preload-helper-776d3f39.js"
     ],
     "dynamicImports": [
       ".svelte-kit/runtime/components/layout.svelte",
@@ -32,12 +32,12 @@
     ]
   },
   "src/routes/index.svelte": {
-    "file": "pages/index.svelte-4184ed30.js",
+    "file": "pages/index.svelte-3d573d42.js",
     "src": "src/routes/index.svelte",
     "isEntry": true,
     "isDynamicEntry": true,
     "imports": [
-      "_preload-helper-e4860ae8.js",
+      "_preload-helper-776d3f39.js",
       "_vendor-2bdf7795.js"
     ],
     "dynamicImports": [
@@ -47,8 +47,8 @@
   "_vendor-2bdf7795.js": {
     "file": "chunks/vendor-2bdf7795.js"
   },
-  "_preload-helper-e4860ae8.js": {
-    "file": "chunks/preload-helper-e4860ae8.js"
+  "_preload-helper-776d3f39.js": {
+    "file": "chunks/preload-helper-776d3f39.js"
   },
   "src/lib/game/index.ts": {
     "file": "chunks/index-917e31e2.js",
