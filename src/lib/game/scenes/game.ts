@@ -107,7 +107,7 @@ export class Game extends Scene {
 	onSecondElapsed() {
 		this.remainingSeconds = this.remainingSeconds - 1 * 1000;
 		if (this.remainingSeconds >= 0) {
-			if (this.remainingSeconds === 0) this.transitionToStartScene()
+			if (this.remainingSeconds === 0) this.transitionToStartScene();
 			this.setCountDown(this.remainingSeconds);
 		}
 	}
@@ -116,12 +116,12 @@ export class Game extends Scene {
 	 * Increase difficulty with time
 	 */
 	increaseDifficulty() {
-		this.velocityY += this.remainingSeconds < 8 * 1000 ? 200 : 25
-		this.spawnTimer.timeScale += this.remainingSeconds < 8 * 1000 ? 4 : 0.5
+		this.velocityY += this.remainingSeconds < 8 * 1000 ? 200 : 25;
+		this.spawnTimer.timeScale += this.remainingSeconds < 8 * 1000 ? 4 : 0.5;
 	}
 
 	/**
-	 * Spawn random text at random `x` position for `this.spawnCount` number of times with some delay 
+	 * Spawn random text at random `x` position for `this.spawnCount` number of times with some delay
 	 */
 	async spawnText() {
 		const spawn = () => {
@@ -201,7 +201,7 @@ export class Game extends Scene {
 	}
 
 	/**
-	 * Hit text if transcript matches with any of the spawned text in scene 
+	 * Hit text if transcript matches with any of the spawned text in scene
 	 * @param text - transcript result
 	 */
 	onHit(text: string) {

@@ -9,6 +9,7 @@ Try to get maximum words within timeout.
 </div>
 
 ## Building from source:
+
 ```bash
 git clone https://github.com/gajananpp/word-game.git
 

@@ -15,4 +15,11 @@ const config = {
 	}
 };
 
+if (process.env.GITHUB_ACTION) {
+	config.kit.paths = {
+		base: '/word-game',
+		assets: '/word-game'
+	};
+}
+
 export default config;
