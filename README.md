@@ -2,11 +2,14 @@
 
 # Word Game
 
-Try to get maximum words within timeout.
+Try to get maximum words before time runs out.
 
-![Demo GIF]()
+<img src="static/word-game-demo.gif" alt="Demo GIF" width="640"/>
 
 </div>
+
+## Play:
+[https://gajananpp.github.io/word-game](https://gajananpp.github.io/word-game)
 
 ## Building from source:
 
